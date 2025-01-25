@@ -2,31 +2,20 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 import { IBuyer, ISeller, IUser } from "../interfaces/IUser";
 import { boolean } from "zod";
 
-// Define the main User schema
 const UserSchema: Schema<IUser> = new Schema(
   {
     name: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String },
     role: { type: String, enum: ["buyer", "seller"], required: true },
-    phone_number: { type: String, default: null },
     images: [
       {
         key: { type: String, required: true, default:"" },
         url: { type: String, required: true, default:""},
       },
     ],
-    is_two_factor_enabled: { type: Boolean, default: false },
-    two_factor_code: { type: String },
-    googleId: { type: String },
-    appleId: { type: String },
     isEmailVerified: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
-    otpExpires: { type: Date },
-    otp: { type: String, default: "" },
-    isActive: { type: Boolean, default: true },
-    lastLogin: { type: Date, default: null },
-    fcm_token: {type: String, default: null},
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
@@ -96,53 +85,22 @@ const SellerSchema: Schema<ISeller> = new Schema({
       },
 
       storeImage: { type: String },
-      storeVerificationDetails: { type: String },
-      isStoreRejected: { type: Boolean, default: false },
       isStoreVerified: { type: Boolean, default: false },
       isStoreApproved: { type: Boolean, default: false },
-      isStoreSuspended: { type: Boolean, default: false },
-      suspensionReason: { type: String, default: null },
-      suspensionDate: { type: Date, default: null },
+      isStoreRejected: { type: Boolean, default: false },
+      StoreSuspension: { 
+        isSuspended: { type: Boolean, default: false },
+        suspensionReason: { type: String, default: null },
+        suspensionDate: { type: Date, default: null },
+        suspensionEndDate: { type: Date, default: null },
+      },
       isStoreBlacklisted: { type: Boolean, default: false },
-      isStoreDeactivated: { type: Boolean, default: false },
-      storeAvailability: { type: String }, // Match with interface type
-      lastLogin: { type: Date, default: null },
       storeProduct: [
         {
           type: Schema.Types.ObjectId,
           ref: "Product",
         },
-      ],
-      store_bank_details: {
-        bank_name: {
-          type: String,
-
-          default: null,
-        },
-        bank_code: {
-          type: String,
-
-          default: null,
-        },
-
-        account_name: {
-          type: String,
-
-          default: null,
-        },
-        account_number: {
-          type: String,
-
-          default: null,
-        },
-        recipient:{
-          type:String,
-          default:null
-        }
-      },
-      total_earnings:{type:Number, default:0},
-      balance: { type: Number, default: 0 },
-      point: { type: Number, default: 0 },
+      ]
     }),
     validate: {
       validator: function (v: any) {

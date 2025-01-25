@@ -15,19 +15,9 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: "buyer" | "seller";
-  phone_number: string;
   images: { key: string; url: string }[];
-  is_two_factor_enabled: boolean;
-  two_factor_code: string;
-  googleId: string;
-  appleId: string;
-  otp: string;
-  otpExpires: Date;
   isEmailVerified: boolean;
   isDeleted: boolean;
-  isActive: boolean;
-  lastLogin: Date;
-  fcm_token: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -45,30 +35,18 @@ export interface ISeller extends IUser {
       rating: number;
     }[];
     storeImage?: string;
-    storeAvailability?: string; // Match with schema type
 
     storeProduct?: Schema.Types.ObjectId[];
-    storeVerificationDetails: string[];
     isStoreRejected: boolean;
     isStoreVerified: boolean;
     isStoreApproved: boolean;
-    isStoreSuspended: boolean;
-    suspensionReason?: string;
-    suspensionDate?: Date;
-    isStoreBlacklisted: boolean;
-    isStoreDeactivated: boolean;
-    isStoreBlacklisted: boolean;
-    lastLogin: Date;
-    store_bank_details: {
-      bank_name: string;
-      bank_code: string;
-      acciount_name: string;
-      account_number: string;
-      recipient: string;
+    StoreSuspension: {
+      isStoreSuspended: boolean;
+      suspensionReason: string;
+      suspensionDate: Date;
+      suspensionEndDate: Date;
     };
-    total_earnings: number;
-    balance: number;
-    point: number;
+    isStoreBlacklisted: boolean;
   };
 }
 
