@@ -14,6 +14,8 @@ const UserSchema: Schema<IUser> = new Schema(
         url: { type: String, required: true, default:""},
       },
     ],
+    otp: { type: String },
+    otpExpires: { type: Date },
     isEmailVerified: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },

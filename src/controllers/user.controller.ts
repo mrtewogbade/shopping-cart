@@ -1,25 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import https from "https";
 import catchAsync from "../errors/catchAsync";
 import { Seller, User } from "../models/user.model";
 import AppResponse from "../helpers/AppResponse";
 import { IUser } from "../interfaces/IUser";
 import AppError from "../errors/AppError";
-import axios from "axios";
-import { getBankCode } from "../helpers/bankCodes";
-import verifyAccount, {
-  generateTransferRecipient,
-} from "../helpers/verifyAccount";
-import {
-  TransactionType,
-  PaymentMethod,
-  TransactionStatus,
-} from "../interfaces/ITransaction";
-import { Transaction } from "../src/models/transactions.model";
 import { uploadMedia, deleteImage } from "../helpers/uploadAndDeleteImage";
-import Limiter from "../middleware/rateLimit";
-import logger from "../middleware/logger";
-import { date } from "zod";
+
+
 
 export const FetchUsersList = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -29,6 +16,7 @@ export const FetchUsersList = catchAsync(
     return AppResponse(res, "Users fetched succcessfully.", 200, users);
   }
 );
+
 export const FetchMyDetails = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const Id = (req.user as IUser).id;
@@ -47,14 +35,7 @@ export const FetchMyDetails = catchAsync(
     );
   }
 );
-export const FetchSingleUser = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req.params;
-    const user = await User.findById(userId).select("-password -isDeleted");
-    console.log(user);
-    return AppResponse(res, "User fetched succcessfully.", 200, user);
-  }
-);
+
 
 export const fetchSellerProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { sellerId } = req.params;
@@ -179,177 +160,8 @@ export const DeleteUser = catchAsync(
     return AppResponse(res, "Account deleted succcessfully.", 200, account);
   }
 );
-export const FetchMyShippingAddress = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const users = await User.find().select(
-      "-password -otp -otpExpires -is_two_factor_enabled"
-    );
-    return AppResponse(res, "Users fetched succcessfully.", 200, users);
-  }
-);
 
-export const CreateMyShippingAddress = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    const { country, postal_code, street_address, LGA, state, deliveryType } =
-      req.body;
 
-    const account = await User.findById(user.id).select(
-      "-password -otp -otpExpires -is_two_factor_enabled"
-    );
-    console.log(account);
-    return AppResponse(res, "Users fetched succcessfully.", 200, account);
-  }
-);
-
-export const addBankDetails = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    const { bank_name, account_number } = req.body;
-    const { bank_code } = req.query;
-    let bankCode;
-    //We first of all verify the bank account before we add it
-    if (!bank_code) {
-      bankCode = await getBankCode(bank_name);
-    } else {
-      bankCode = bank_code;
-    }
-
-    const response = await verifyAccount(account_number, bankCode);
-    if (response.status == "fail")
-      return next(new AppError(`${response.message}`, 400));
-    const paystackResponse: any = await generateTransferRecipient(
-      user.name,
-      response.data.account_number,
-      bankCode
-    );
-
-    if (paystackResponse.status == false)
-      return next(new AppError(`${paystackResponse.message}`, 400));
-
-    //Here, i will do the saving
-    const updateAccount: any = await User.findById(user._id).select(
-      "-password -is_two_factor_enabled -isDeleted -otp -otpExpires -store.isStoreRejected -store.isStoreApproved -store.isStoreDeactivated -store.isStoreBlacklisted"
-    );
-    if (!updateAccount)
-      return next(
-        new AppError("Could not find your account, please contact admin.", 400)
-      );
-
-    updateAccount.store.store_bank_details.bank_name = bank_name;
-
-    updateAccount.store.store_bank_details.bank_code = bankCode;
-    updateAccount.store.store_bank_details.account_name =
-      response.data.account_name;
-    updateAccount.store.store_bank_details.account_number =
-      response.data.account_number;
-    updateAccount.store.store_bank_details.recipient =
-      paystackResponse.data.recipient_code;
-    await updateAccount.save();
-
-    return AppResponse(
-      res,
-      "Your account has been updated succcessfully.",
-      200,
-      updateAccount
-    );
-  }
-);
-
-export const requestWithdrawal = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    const { amount } = req.body;
-    const findAccount: any = await User.findById(user._id).select(
-      "-password -is_two_factor_enabled -isDeleted -otp -otpExpires -store.isStoreRejected -store.isStoreApproved -store.isStoreDeactivated -store.isStoreBlacklisted"
-    );
-    if (!findAccount)
-      return next(
-        new AppError("Could not place your withdrawal request.", 400)
-      );
-
-    const store_bank_details = findAccount.store.store_bank_details;
-    if (
-      !store_bank_details.bank_name ||
-      !store_bank_details.bank_code ||
-      !store_bank_details.account_number ||
-      !store_bank_details.account_name ||
-      !store_bank_details.recipient
-    )
-      return next(
-        new AppError(
-          "Bank details missing, please add them before you retry.",
-          400
-        )
-      );
-    if (amount == 0)
-      return next(
-        new AppError("Withdrawal request failed, amount can not be 0.", 400)
-      );
-    if (amount > findAccount.store.balance)
-      return next(
-        new AppError("Withdrawal request failed, not enough balance.", 400)
-      );
-      findAccount.store.balance -= amount;
-      
-    const transaction = new Transaction({
-      user: user._id,
-      transactionId: store_bank_details.recipient,
-      currency: "NGN",
-      amount,
-      status: TransactionStatus.UNSETTLED,
-      paymentMethod: PaymentMethod.NULL,
-      transactionType: TransactionType.TRANSFER,
-      reference: null,
-      withdrawalRequest: true,
-    });
-    await transaction.save();
-    await findAccount.save();
-    return AppResponse(
-      res,
-      `You have succcessfully requested for your withdrawal. Please wait while we process it.`,
-      200,
-      transaction
-    );
-  }
-);
-
-export const CalculateSellerEarnings = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    //Here we are to set an aggregation pipeline that will fetch all the sales of the  last 24 hours
-    // Then allocate them to the rightful store owner
-  }
-);
-
-export const DeleteWithdrawalRequest = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    const { transactionId } = req.params;
-    const deletedTransaction = await Transaction.findByIdAndDelete({
-      _id: transactionId,
-      status: TransactionStatus.UNSETTLED,
-    });
-    if (!deletedTransaction)
-      return next(new AppError("Failed to delete withdrawal request.", 400));
-    const findAccount: any = await User.findById(user._id).select(
-      "-password -is_two_factor_enabled -isDeleted -otp -otpExpires -store.isStoreRejected -store.isStoreApproved -store.isStoreDeactivated -store.isStoreBlacklisted"
-    );
-    if (!findAccount)
-      return next(
-        new AppError("Could not place your withdrawal request.", 400)
-      );
-      findAccount.store.balance += deletedTransaction.amount;
-      await findAccount.save();
-
-    return AppResponse(
-      res,
-      "Withdrawal request deleted succesfully",
-      200,
-      null
-    );
-  }
-);
 
 export const fetchAllStores = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -391,51 +203,3 @@ export const fetchAllStores = catchAsync(
   }
 );
 
-
-export const verifySellerViaNin = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    try{}catch(err:any){return next(new AppError(err.message, 400))}
-    return AppResponse(res, "Users fetched succcessfully.", 200, );
-  }
-);
-
-
-
-export const submitFcmToken = [
-  Limiter,
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    const { fcm_token } = req.body;
-
-    if (!fcm_token) {
-      logger.error(`User ${user._id} failed to provide an FCM token.`);
-      return next(new AppError("FCM token is required.", 400));
-    }
-
-    if (user.fcm_token === fcm_token) {
-      logger.info(`User ${user._id} submitted an already existing FCM token.`);
-      return res.status(200).json({ message: "FCM token is already up-to-date." });
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      user._id,
-      { fcm_token },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      logger.error(`Failed to update FCM token for User ${user._id}.`);
-      return next(new AppError("Failed to update FCM token.", 400));
-    }
-
-    logger.info(`Successfully updated FCM token for User ${user._id}.`);
-    AppResponse(res, "FCM token updated successfully.", 200, {
-      date:{
-        id: updatedUser._id,
-        name: updatedUser.name,
-        fcm_token: updatedUser.fcm_token,
-      }
-    });
-  }),
-];

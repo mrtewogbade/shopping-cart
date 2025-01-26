@@ -1,25 +1,6 @@
 import { model, Schema } from "mongoose";
 import { IProduct } from "../interfaces/IProduct";
 
-const specSchema = new Schema({
-  specName: { type: String, required: true },
-  value: { type: String, required: true },
-});
-
-const variationSchema = new Schema({
-  title: { 
-    type: String,
-  },
-  description: { 
-    type: String,
-  },
-  images: [{
-    key: { type: String },
-    imageUrl: { type: String },
-  }]
-});
-
-
 const productSchema = new Schema<IProduct>(
   {
     seller: {
@@ -39,33 +20,18 @@ const productSchema = new Schema<IProduct>(
       type: Number,
       required: true,
     },
-    discount: {
-      type: Number,
-    },
     category: {
       type: Schema.Types.ObjectId,
       required: true,
       ref: "Category",
     },
-    specs: [specSchema],
-    thumbnail: {
-      type: String,
-      required: true,
-    },
     images: [{
       key: { type: String, required: true },
       imageUrl: { type: String, required: true },
     }],
-    variations: [variationSchema],  // Added variations array
-    tags: {
-      type: [String],
-    },
     location: {
       type: String,
       required: true,
-    },
-    sizes: {
-      type: [String],
     },
     ratings: [{
       user: { type: Schema.Types.ObjectId, ref: "User" },
@@ -78,10 +44,6 @@ const productSchema = new Schema<IProduct>(
       type: Schema.Types.ObjectId,
       ref: "Review",
       default: null,
-    },
-    views: {
-      type: Number,
-      default: 0
     },
     stock:{
       type:Number,

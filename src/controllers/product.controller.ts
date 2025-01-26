@@ -7,11 +7,6 @@ import { ISeller, IUser } from "../interfaces/IUser";
 import { deleteImage, uploadMedia } from "../helpers/uploadAndDeleteImage";
 import { Seller, User } from "../models/user.model";
 import mongoose from "mongoose";
-import Category, { SubCategory } from "../models/category.model";
-import Order from "../models/order.model";
-
-//The Concept here is that, product are not deleted in actual sense after they are posted.
-//Just that, the product with the isDeleted field being true, are never fetched
 
 export const createProduct = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -31,38 +26,9 @@ export const createProduct = catchAsync(
       discount,
       category,
       location,
-      tags,
-      sizes,
-      specs,
-      video_link,
+   
       stock,
-      variations, // Add variations to the request body
     } = req.body;
-
-    const sanitizedSpec = specs.map((spec: any) => ({
-      specName: spec.specName,
-      value: spec.value,
-    }));
-
-    const parentCategory: any = await SubCategory.findOne({
-      name: category,
-    }).populate("specs");
-    if (!parentCategory) {
-      return next(new AppError("Subcategory not found.", 404));
-    }
-
-    for (const spec of parentCategory.specs) {
-      if (spec.required) {
-        const foundSpec = sanitizedSpec.some(
-          (s: any) => s.specName == spec.specName
-        );
-
-        if (!foundSpec)
-          return next(
-            new AppError(`Missing required spec: ${spec.specName}`, 400)
-          );
-      }
-    }
 
     const user: any = await Seller.findById(id).select("-password");
     if (!user) {
@@ -72,33 +38,7 @@ export const createProduct = catchAsync(
     const productImages = fileCheck.filter(
       (file: any) => file.fieldname === "file"
     );
-    const allVariationImages = fileCheck.filter(
-      (file: any) => file.fieldname != "file"
-    );
-
-    // Handle variations and upload images for variations
-    let variationImages = [];
-    if (variations && variations.length > 0) {
-      // return;
-      variationImages = await Promise.all(
-        variations.map(async (variation: any, index: number) => {
-          const mappedImages = allVariationImages.filter(
-            (file: any) => file.fieldname == `variations[${index}][files]`
-          );
-          const uploadedVariationImages = await uploadMedia(
-            mappedImages as Express.Multer.File[]
-          );
-
-          return {
-            ...variation,
-            images: uploadedVariationImages.map((img: any) => ({
-              key: img.key,
-              imageUrl: img.imageUrl,
-            })),
-          };
-        })
-      );
-    }
+      
 
     const uploadedImages = await uploadMedia(
       productImages as Express.Multer.File[]
@@ -116,12 +56,8 @@ export const createProduct = catchAsync(
       category,
       thumbnail,
       images: uploadedImages,
-      tags,
-      sizes,
-      specs: sanitizedSpec,
-      video_link,
       stock,
-      variations: variationImages, // Add variations to the product
+
     });
 
     user?.store.storeProduct.push(newProduct.id);
@@ -159,64 +95,6 @@ export const editProduct = catchAsync(
     if (product.seller != id)
       return next(new AppError("You can only delete your own product", 400));
 
-    // Validate category and specs if they are provided
-    let sanitizedSpecs = product.specs;
-    if (category || specs) {
-      const parentCategory: any = await SubCategory.findOne({
-        name: category || product.category, // Use existing category if not updated
-      }).populate("specs");
-
-      if (!parentCategory) {
-        return next(new AppError("Subcategory not found.", 404));
-      }
-
-      if (specs) {
-        sanitizedSpecs = specs.map((spec: any) => ({
-          specName: spec.specName,
-          value: spec.value,
-        }));
-        // console.log(spec)
-        console.log(sanitizedSpecs);
-
-        for (const requiredSpec of parentCategory.specs) {
-          if (requiredSpec.required) {
-            const hasRequiredSpec = sanitizedSpecs.some(
-              (s: any) => s.specName == requiredSpec.specName
-            );
-            console.log(hasRequiredSpec);
-            if (!hasRequiredSpec) {
-              return next(
-                new AppError(
-                  `Missing required spec: ${requiredSpec.specName}`,
-                  400
-                )
-              );
-            }
-          }
-        }
-      }
-    }
-
-    // Update fields if they are provided
-    if (name !== undefined) product.name = name;
-    if (description !== undefined) product.description = description;
-    if (price !== undefined) product.price = price;
-    if (discount !== undefined) product.discount = discount;
-    if (category !== undefined) product.category = category;
-    if (location !== undefined) product.location = location;
-    if (tags !== undefined) product.tags = tags;
-    if (sizes !== undefined) product.sizes = sizes;
-    if (specs !== undefined) product.specs = sanitizedSpecs;
-
-    // Save the updated product
-    await product.save();
-    const { isDeleted, ...filteredProduct } = product.toObject();
-    return AppResponse(
-      res,
-      "Product updated successfully",
-      200,
-      filteredProduct
-    );
   }
 );
 
@@ -342,19 +220,6 @@ export const fetchAllProducts = catchAsync(
   }
 );
 
-
-export const fetchProductByCategory = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const category = req.query.category;
-    const products = await Product.find({ category });
-    return AppResponse(
-      res,
-      "Products related to the category fetched successfully",
-      200,
-      products
-    );
-  }
-);
 export const deleteAllProducts = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const findProduct = await Product.deleteMany();
@@ -399,42 +264,6 @@ export const getSingleProduct = catchAsync(
 );
 
 
-export const FetchCategories = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const categories = await Category.find()
-      .populate("subcategories")
-      .sort("displayRanking");
-    //We should change this to an aggregation pipeline
-    return AppResponse(res, "Categories fetched successfully", 200, {
-      data: categories,
-    });
-  }
-);
-
-export const FetchSubCategories = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const results = await SubCategory.find().populate("specs");
-    return AppResponse(res, "Subcategories fetched successfully", 200, {
-      data: results,
-    });
-  }
-);
-
-export const fetchSpecsForSubCategories = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { subcategoryId } = req.params;
-    const results = await SubCategory.findById(subcategoryId).populate("specs");
-
-    return AppResponse(
-      res,
-      "Specs for selected subcategory fetched successfully",
-      200,
-      {
-        data: results,
-      }
-    );
-  }
-);
 
 export const fetchAllMyProducts = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -522,99 +351,8 @@ export const fetchAllMyProducts = catchAsync(
   }
 );
 
-export const CountProductViews = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { search } = req.query;
 
-    return AppResponse(res, "Products has been viewed", 200, null);
-  }
-);
 
-export const getTopSellers = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const topSellers = await Product.aggregate([
-        {
-          $lookup: {
-            from: "orders",
-            localField: "_id",
-            foreignField: "lineItems.productId",
-            as: "orderData",
-          },
-        },
-        {
-          $addFields: {
-            totalSales: { $size: "$orderData" },
-            averageRating: { $avg: "$ratings.rating" },
-            reviewCount: { $size: "$ratings" },
-          },
-        },
-        {
-          $sort: {
-            totalSales: -1, // Sorting by total sales descending
-            averageRating: -1, // Sorting by rating descending
-          },
-        },
-        {
-          $limit: 8,
-        },
-        {
-          $project: {
-            _id: 1,
-            category: 1,
-            name: 1,
-            price: 1,
-            averageRating: 1,
-            reviewCount: 1,
-            thumbnail: 1,
-          },
-        },
-      ]);
-      return AppResponse(
-        res,
-        "Top sellers fetched successfully",
-        200,
-        topSellers
-      );
-    } catch (error) {
-      return next(
-        new AppError("An error occured while fetching top sellers", 500)
-      );
-    }
-  }
-);
-
-export const getSimilarProducts = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { productId } = req.params;
-    try {
-      const currentProduct = await Product.findById(productId);
-
-      if (!currentProduct) {
-        return next(new AppError("Product not found", 404));
-      }
-
-      const similarProducts = await Product.find({
-        _id: { $ne: productId },
-        category: currentProduct.category,
-      })
-        .select("_id name price thumbnail ratings")
-        .limit(4)
-        .lean();
-
-      return AppResponse(
-        res,
-        "Similar products fetched successfully",
-        200,
-        similarProducts
-      );
-    } catch (error) {
-      return next(
-        new AppError("An error occured while fetching similar products", 500)
-      );
-    }
-  }
-);
 
 export const newArrivals = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -638,74 +376,8 @@ export const newArrivals = catchAsync(
   }
 );
 
-export const getTopCategories = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const topCategories = await Category.aggregate([
-        {
-          $lookup: {
-            from: "products",
-            localField: "subcategories",
-            foreignField: "category",
-            as: "products",
-          },
-        },
-        {
-          $addFields: {
-            totalProducts: { $size: "$products" },
-          },
-        },
-        {
-          $sort: {
-            totalProducts: -1,
-          },
-        },
-        {
-          $limit: 8,
-        },
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            totalProducts: 1,
-          },
-        },
-      ]);
 
-      return AppResponse(
-        res,
-        "Top categories fetched successfully",
-        200,
-        topCategories
-      );
-    } catch (error) {
-      return next(
-        new AppError("An error occured while fetching top categories", 500)
-      );
-    }
-  }
-);
 
-export const getCategories = async (req: Request, res: Response) => {
-  try {
-    const limit = parseInt(req.query.limit as string) || 6;
-    const page = parseInt(req.query.page as string) || 1;
-
-    const categories = await Category.find()
-      .sort({ displayRanking: 1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .populate("subcategories", "name")
-      .lean();
-
-    res.status(200).json(categories);
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    res.status(500).json({ message: "Failed to fetch categories." });
-  }
-};
-
-// STORE RATING
 
 export const rateStore = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -751,110 +423,7 @@ export const rateStore = catchAsync(
   }
 );
 
-export const getStoreRating = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { sellerId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(sellerId)) {
-      return next(new AppError("Invalid seller ID format", 400));
-    }
-    const seller = await Seller.findById(sellerId).populate({
-      path: "store.ratings.user",
-      select: "name email imageUrl",
-      options: { virtuals: true },
-    });
-    if (!seller || !seller.store) {
-      return next(new AppError("Seller store not found", 404));
-    }
-    const ratings = seller.store.ratings || [];
-    const averageRating = seller.store.rating || 0;
-
-    return AppResponse(res, "Store ratings retrieved successfully", 200, {
-      averageRating,
-      totalRatings: ratings.length,
-      ratings: ratings.map((rating) => ({
-        user: rating.user,
-        rating: rating.rating,
-      })),
-    });
-  }
-);
-
-export const getUserStoreRating = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { sellerId } = req.params;
-    const userId = (req.user as IUser).id;
-
-    const seller = await Seller.findById(sellerId);
-    if (!seller || !seller.store) {
-      return next(new AppError("Seller store not found", 404));
-    }
-
-    const userRating = seller.store.ratings.find(
-      (r) => r.user.toString() === userId
-    );
-
-    return AppResponse(
-      res,
-      "User rating retrieved successfully",
-      200,
-      userRating || { rating: null }
-    );
-  }
-);
-
-export const deleteStoreRating = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-      const { sellerId } = req.params;
-      const userId = (req.user as IUser).id;
-
-      const seller = await Seller.findById(sellerId).session(session);
-      if (!seller || !seller.store) {
-        throw new AppError("Seller store not found", 404);
-      }
-
-      // Remove user's rating
-      const initialLength = seller.store.ratings.length;
-      seller.store.ratings = seller.store.ratings.filter(
-        (r) => r.user.toString() !== userId
-      );
-
-      if (initialLength === seller.store.ratings.length) {
-        throw new AppError("Rating not found", 404);
-      }
-
-      // Recalculate average rating
-      if (seller.store.ratings.length > 0) {
-        const totalRating = seller.store.ratings.reduce(
-          (sum, r) => sum + r.rating,
-          0
-        );
-        seller.store.rating = Number(
-          (totalRating / seller.store.ratings.length).toFixed(1)
-        );
-      } else {
-        seller.store.rating = 0;
-      }
-
-      await seller.save({ session });
-      await session.commitTransaction();
-
-      return AppResponse(res, "Rating deleted successfully", 200, {
-        averageRating: seller.store.rating,
-        totalRatings: seller.store.ratings.length,
-      });
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
-  }
-);
 
 
 export const SearchForProduct = catchAsync(

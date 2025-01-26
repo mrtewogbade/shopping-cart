@@ -17,7 +17,7 @@ import {
 } from "../helpers/GenerateToken";
 import sendOtp from "../helpers/sendOtp";
 import verifyOtp from "../helpers/verifyOtp";
-import Otp from "../src/models/otp.model";
+import Otp from "../models/otp.model";
 import { NODE_ENV, RefreshToken_Secret_Key } from "../serviceUrl";
 import GenerateRandomId, {
   generateRandomAlphanumeric,
@@ -154,84 +154,6 @@ export const verifyEmailHandler = catchAsync(
   }
 );
 
-export const CreateOtpHandler = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    const { phone_number } = req.body;
-    const findPinNum = await Otp.findOne({ userId: user.id });
-    if (findPinNum)
-      return next(
-        new AppError(
-          "OTP has already been sent, please retry after 15 minutes.",
-          404
-        )
-      );
-
-    const response = await sendOtp(phone_number);
-    if (response.status == "fail")
-      return next(new AppError(response.message, 500));
-    //We will handle for cases of resend OTP;
-    const storePinId = new Otp({
-      userId: user.id,
-      pinId: response.pin_id,
-      phone_number: response.phone_number,
-    });
-
-    storePinId.save();
-    return AppResponse(
-      res,
-      "An OTP has been succesfully sent to your phone number.",
-      201,
-      { status: response.smsStatus, recipient: response.to }
-    );
-  }
-);
-
-export const verifyOtpHandler = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-
-    const { otp } = req.body;
-    const findPinNum = await Otp.findOne({ userId: user.id });
-    if (!findPinNum)
-      return next(
-        new AppError("I did not generate an Otp for this phone number", 404)
-      );
-    const { pinId } = findPinNum;
-    const response = await verifyOtp(pinId, otp);
-
-    if (response.status == "fail")
-      return next(new AppError(response.message, 500));
-    if (response.verified !== true)
-      return next(
-        new AppError(
-          "OTP may have expired, please retry after 15 minutes. ",
-          response.status
-        )
-      );
-    if (response.verified === true) {
-      const updatedUserPhone: any = await User.findById(user.id);
-      if (!updatedUserPhone)
-        return next(
-          new AppError(
-            "Updating phone number failed, this user does not exist",
-            404
-          )
-        );
-      updatedUserPhone.phone_number = findPinNum.phone_number;
-
-      updatedUserPhone.save();
-      return AppResponse(
-        res,
-        "User phone number has been updated successfully.",
-        200,
-        null
-      );
-    }
-  }
-);
-
-//Completed
 
 export const loginHandler = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -315,117 +237,6 @@ export const loginHandler = catchAsync(
 );
 
 
-export const ToggleTwoFactor = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.user as IUser;
-    let url;
-    const user = await User.findById(id);
-    if (!user)
-      return next(new AppError("Action to enable 2 factor failed", 401));
-    //Here we are changing from true to false
-    if (user.is_two_factor_enabled) {
-      user.is_two_factor_enabled = false;
-      user.two_factor_code = "";
-      await user.save();
-      return AppResponse(
-        res,
-        "User has successfully disabled 2FA on their account.",
-        200,
-        user
-      );
-    }
-    //Here we are changing from false to true
-    if (user.is_two_factor_enabled == false) {
-      user.is_two_factor_enabled = true;
-    }
-    //After we have made it true, we run this code;
-    if (user.is_two_factor_enabled == true) {
-      let secret = speakeasy.generateSecret({
-        name: "Arennah",
-      });
-      
-      qrcode.toDataURL(secret.otpauth_url as string, function (err, data) {
-        if (err) return next(new AppError("Could not generate QR Code", 400));
-        url = data;
-        user.two_factor_code = secret.ascii;
-      });
-    }
-    await user.save();
-    return AppResponse(
-      res,
-      "User has successfully enabled 2FA on their account. Below is your URL",
-      200,
-      { user, url }
-    );
-  }
-);
-
-export const LoginViaTwoFactor = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const isMobile = req.headers.mobilereqsender;
-    const { two_factor_code } = req.body;
-    //This specific User is from the tracking token, and it is different from our access token
-    const decodedToken = req.user as any;
-    const { time, id } = decodedToken;
-    //We will add a check to look out for the time it was being done
-    // if(time > Date.now)
-    const user = await User.findById(id);
-    if (!user) return next(new AppError("User not found", 401));
-    const isVerified = speakeasy.totp.verify({
-      token: two_factor_code,
-      secret: user.two_factor_code,
-      encoding: "ascii",
-    });
-    if (isVerified) {
-      const account = {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profile_image:user.images
-      };
-      const accessToken: string | undefined = GenerateAccessToken(account);
-      const refreshToken: string | undefined = GenerateRefreshToken(account);
-      //If it is mobile we send token in response
-
-      if (isMobile)
-        return AppResponse(res, "Login successful", 200, {
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-          account,
-        });
-      //Here we are to check if it is web or Postman, we send cookies for tokens
-      res.cookie("e_access_token", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
-        partitioned: true,
-        priority: "high",
-        signed: true,
-        maxAge: 24 * 60 * 60 * 1000,
-        expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 10000),
-      });
-
-      res.cookie("e_refresh_token", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "none",
-        partitioned: true,
-        signed: true,
-        priority: "high",
-        maxAge: 24 * 60 * 60 * 1000,
-        expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 10000),
-      });
-      return AppResponse(res, "Login successful", 200, {
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        account,
-      });
-    }
-    return next(new AppError("Code is incorrect, please retry", 401));
-  }
-);
-//Completed
 export const logOutHandler = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     //If Web
@@ -544,6 +355,8 @@ export const ChangePasswordHandler = catchAsync(
     return AppResponse(res, "An OTP has been sent to your email. ", 200, email);
   }
 );
+
+
 
 export const ResetPasswordOtpHandler = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

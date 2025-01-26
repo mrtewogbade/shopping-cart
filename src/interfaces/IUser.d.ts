@@ -16,6 +16,8 @@ export interface IUser extends Document {
   password: string;
   role: "buyer" | "seller";
   images: { key: string; url: string }[];
+  otp: string;
+  otpExpires: Date;
   isEmailVerified: boolean;
   isDeleted: boolean;
   createdAt?: Date;
