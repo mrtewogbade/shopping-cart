@@ -1,0 +1,30 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.YOUVERIFY_API_KEY = exports.GOOGLE_CLIENT_SECRET = exports.GOOGLE_CLIENT_ID = exports.Tracking_Token_Secret_Key = exports.BREVO_RELAY = exports.BREVO_PORT = exports.BREVO_SMTP = exports.GOOGLE_PASS = exports.GOOGLE_ADDRESS = exports.CLOUDFLARE_BUCKETNAME = exports.TERMII_SENDER_ID = exports.TERMII_API_KEY = exports.AccessToken_Secret_Key = exports.RefreshToken_Secret_Key = exports.NODE_ENV = exports.DB_URI = exports.CloudflareR2ApiURL = exports.AWS_REGION = exports.COOKIE_SECRET = exports.PORT = exports.Termii_BASE_URL = void 0;
+//This is where we will have all our base Urls
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+exports.Termii_BASE_URL = process.env.TERMII_BASE_URL;
+exports.PORT = process.env.PORT;
+exports.COOKIE_SECRET = process.env.COOKIE_SECRET;
+exports.AWS_REGION = process.env.AWS_REGION;
+exports.CloudflareR2ApiURL = process.env.CloudflareR2ApiURL;
+exports.DB_URI = process.env.DB_URI;
+exports.NODE_ENV = process.env.NODE_ENV;
+exports.RefreshToken_Secret_Key = process.env.RefreshToken_Secret_Key;
+exports.AccessToken_Secret_Key = process.env.AccessToken_Secret_Key;
+exports.TERMII_API_KEY = process.env.TERMII_API_KEY;
+exports.TERMII_SENDER_ID = process.env.TERMII_SENDER_ID;
+exports.CLOUDFLARE_BUCKETNAME = process.env.CLOUDFLARE_BUCKETNAME;
+exports.GOOGLE_ADDRESS = process.env.GOOGLE_ADDRESS;
+exports.GOOGLE_PASS = process.env.GOOGLE_PASS;
+exports.BREVO_SMTP = process.env.BREVO_SMTP;
+exports.BREVO_PORT = process.env.BREVO_PORT;
+exports.BREVO_RELAY = process.env.BREVO_RELAY;
+exports.Tracking_Token_Secret_Key = process.env.Tracking_Token_Secret_Key;
+exports.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+exports.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+exports.YOUVERIFY_API_KEY = process.env.YOUVERIFY_API_KEY;
