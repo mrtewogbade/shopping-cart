@@ -6,12 +6,6 @@ import { ISeller, IUser } from "../interfaces/IUser";
 import AppError from "../errors/AppError";
 import { Seller } from "../models/user.model";
 
-// interface ISeller {
-//     isBlacklisted: boolean;
-//     isDeactivated: boolean;
-//     isApproved: boolean;
-// }
-
 const checkSellerStatus = async (req: Request, res: Response, next: NextFunction) => {
   // const user = req.user;
   const {id}= (req.user as IUser);
@@ -29,16 +23,7 @@ const checkSellerStatus = async (req: Request, res: Response, next: NextFunction
 
   if (user.store.isStoreBlacklisted) {
     return next(new AppError("This store has been blacklisted.", 403));
-  } 
-
-  if (user.store.isStoreDeactivated) {
-    return next(new AppError("This has been deactivated.", 403));
   }
-  if (user.store.isStoreSuspended) {
-    return next(new AppError("This has been deactivated.", 403));
-  }
-
- // req.user = store;
   next();
 };
 

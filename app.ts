@@ -59,9 +59,9 @@ const shouldCompress = (req: express.Request, res: express.Response) => {
 app.use(compression({ filter: shouldCompress }));
 
 //All Routes comes in Here
-app.use("/v1/api/auth", authRoutes);
-app.use("/v1/api/user", userRoutes);
-app.use("/v1/api/product", Limiter, productRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/product", Limiter, productRoutes);
 
 
 

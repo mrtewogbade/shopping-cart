@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import speakeasy from "speakeasy";
-import qrcode from "qrcode";
 import catchAsync from "../errors/catchAsync";
 import AppResponse from "../helpers/AppResponse";
 import { Buyer, Seller, User } from "../models/user.model";
