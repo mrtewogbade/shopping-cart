@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const validateZod_1 = __importDefault(require("../middleware/validateZod"));
+const userValidation_1 = require("../validations/userValidation");
+const user_controller_1 = require("../controllers/user.controller");
+const verifyAccessToken_1 = __importDefault(require("../middleware/verifyAccessToken"));
+const checkRole_1 = __importDefault(require("../middleware/checkRole"));
+const multer_config_1 = require("../config/multer.config");
+const router = express_1.default.Router();
+router.get('/users', user_controller_1.FetchUsersList);
+router.get("/seller-profile/:sellerId", user_controller_1.fetchSellerProfile);
+router.get("/user", verifyAccessToken_1.default, user_controller_1.FetchMyDetails);
+router.post("/create-store", (0, validateZod_1.default)(userValidation_1.storeSchema), verifyAccessToken_1.default, (0, checkRole_1.default)("seller"), user_controller_1.CreateSellerStore);
+router.patch("/update-store", (0, validateZod_1.default)(userValidation_1.editSellerStoreSchema), verifyAccessToken_1.default, user_controller_1.editSellerStore);
+router.put("/profile-image", verifyAccessToken_1.default, multer_config_1.upload.single("file"), user_controller_1.ChangeProfileImage);
+router.delete('/:id', user_controller_1.DeleteUser);
+router.get("/stores", user_controller_1.fetchAllStores);
+exports.default = router;
