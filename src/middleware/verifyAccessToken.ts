@@ -9,46 +9,6 @@ import {
 } from "../serviceUrl";
 import { User } from "../models/user.model";
 
-// interface CustomRequest extends Request {
-//   user?: any;
-// }
-
-// const VerifyAccessToken = async (
-//   req: CustomRequest,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   let token: string | undefined;
-
-//   if (!req.headers.authorization) {
-//     return next(new AppError("No authorization header provided", 401));
-//   }
-//   token = req.headers.authorization.split(" ")[1];
-
-//   if (!token) return next(new AppError("No access token provided", 401));
-
-//   jwt.verify(
-//     token,
-//     AccessToken_Secret_Key as string,
-//     async (err: any, decoded: any) => {
-//       if (err)
-//         return next(
-//           new AppError("Incorrect or expired access token, please log in.", 401)
-//         );
-//       const user = await User.findById(decoded.payload.id).select("-password");
-//       if (!user)
-//         return next(
-//           new AppError("User does not exist or account has been deleted.", 404)
-//         );
-//       req.user = decoded.payload;
-//       next();
-//     }
-//   );
-
-//   console.log('Auth Header:', req.headers.authorization);
-
-// };
-// export default VerifyAccessToken;
 
 interface CustomRequest extends Request {
   user?: any;
@@ -91,12 +51,10 @@ const VerifyAccessToken = async (
         new AppError("User does not exist or account has been deleted.", 404)
       );
     }
-
-    // Attach the full user object to the request instead of just the payload
+    
     req.user = user;
 
-    // console.log('Auth Header:', req.headers.authorization);
-    // console.log('User attached to request:', req.user);  // Debug log
+   
 
     next();
   } catch (error) {

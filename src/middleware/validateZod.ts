@@ -1,18 +1,3 @@
-// import {Request, Response, NextFunction} from "express";
-// import { ZodSchema } from "zod";
-// import AppError from "../errors/AppError";
-// const validate = (schema:ZodSchema<any>)=>(req:Request, res:Response, next:NextFunction)=>{
-//     try {
-//         schema.parse(req.body)
-//         next()
-//     } catch (err:any) {
-//         const zodError = JSON.parse(err)
-//         const errorMessages:string = zodError.map((error:Error)=>`${error.message}`).join(", ")
-//         return next(new AppError(errorMessages, 400))
-//     }
-// }
-// export default validate
-
 import { Request, Response, NextFunction } from "express";
 import { ZodSchema , z } from "zod";
 import AppError from "../errors/AppError";
@@ -56,16 +41,6 @@ const validate =
     }
   };
 
-
-export const createAdminSchema = z.object({
-    name: z.string().min(2, "Name must be at least 2 characters long"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters long"),
-    role: z.enum(["admin", "superadmin"], {
-        required_error: "Role is required",
-        invalid_type_error: "Role must be either 'admin' or 'superadmin'",
-    }),
-});
 
 export const rateStoreSchema = z.object({
     params: z.object({
