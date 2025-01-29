@@ -1,23 +1,9 @@
 "use strict";
-// import {Request, Response, NextFunction} from "express";
-// import { ZodSchema } from "zod";
-// import AppError from "../errors/AppError";
-// const validate = (schema:ZodSchema<any>)=>(req:Request, res:Response, next:NextFunction)=>{
-//     try {
-//         schema.parse(req.body)
-//         next()
-//     } catch (err:any) {
-//         const zodError = JSON.parse(err)
-//         const errorMessages:string = zodError.map((error:Error)=>`${error.message}`).join(", ")
-//         return next(new AppError(errorMessages, 400))
-//     }
-// }
-// export default validate
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rateStoreSchema = exports.createAdminSchema = void 0;
+exports.rateStoreSchema = void 0;
 const zod_1 = require("zod");
 const AppError_1 = __importDefault(require("../errors/AppError"));
 const validate = (schema) => async (req, res, next) => {
@@ -57,15 +43,6 @@ const validate = (schema) => async (req, res, next) => {
         }
     }
 };
-exports.createAdminSchema = zod_1.z.object({
-    name: zod_1.z.string().min(2, "Name must be at least 2 characters long"),
-    email: zod_1.z.string().email("Invalid email address"),
-    password: zod_1.z.string().min(8, "Password must be at least 8 characters long"),
-    role: zod_1.z.enum(["admin", "superadmin"], {
-        required_error: "Role is required",
-        invalid_type_error: "Role must be either 'admin' or 'superadmin'",
-    }),
-});
 exports.rateStoreSchema = zod_1.z.object({
     params: zod_1.z.object({
         sellerId: zod_1.z.string({

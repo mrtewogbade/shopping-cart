@@ -31,10 +31,7 @@ const VerifyAccessToken = async (req, res, next) => {
         if (!user) {
             return next(new AppError_1.default("User does not exist or account has been deleted.", 404));
         }
-        // Attach the full user object to the request instead of just the payload
         req.user = user;
-        // console.log('Auth Header:', req.headers.authorization);
-        // console.log('User attached to request:', req.user);  // Debug log
         next();
     }
     catch (error) {

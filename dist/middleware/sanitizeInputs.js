@@ -1,9 +1,10 @@
 "use strict";
-// import { body } from "express-validator";
-// import { Request, Response, NextFunction } from "express";
-// export const sanitizeInputs = [
-//     body("*").trim().escape(),
-//     (req:Request, res:Response, next:NextFunction)=>{
-//         next()
-//     }
-// ]
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sanitizeInputs = void 0;
+const express_validator_1 = require("express-validator");
+exports.sanitizeInputs = [
+    (0, express_validator_1.body)("*").trim().escape(),
+    (req, res, next) => {
+        next();
+    }
+];

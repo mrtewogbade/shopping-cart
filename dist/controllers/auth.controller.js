@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GoogleOauthRegisterHandler = exports.GoogleOauthLoginHandler = exports.ResetPasswordHandler = exports.ResetPasswordOtpHandler = exports.ChangePasswordHandler = exports.GetTokenDetailsHandler = exports.refreshAccessTokenHandler = exports.logOutHandler = exports.loginHandler = exports.verifyEmailHandler = exports.fetchStorePinHandler = exports.registerHandler = void 0;
+exports.GoogleOauthRegisterHandler = exports.GoogleOauthLoginHandler = exports.ResetPasswordHandler = exports.ResetPasswordOtpHandler = exports.ChangePasswordHandler = exports.GetTokenDetailsHandler = exports.refreshAccessTokenHandler = exports.logOutHandler = exports.loginHandler = exports.verifyEmailHandler = exports.registerHandler = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const catchAsync_1 = __importDefault(require("../errors/catchAsync"));
@@ -11,7 +11,6 @@ const AppResponse_1 = __importDefault(require("../helpers/AppResponse"));
 const user_model_1 = require("../models/user.model");
 const AppError_1 = __importDefault(require("../errors/AppError"));
 const GenerateToken_1 = require("../helpers/GenerateToken");
-const otp_model_1 = __importDefault(require("../models/otp.model"));
 const serviceUrl_1 = require("../serviceUrl");
 const GenerateRandomId_1 = require("../helpers/GenerateRandomId");
 const nodemailer_config_1 = __importDefault(require("../config/nodemailer.config"));
@@ -80,10 +79,6 @@ exports.registerHandler = (0, catchAsync_1.default)(async (req, res, next) => {
         role,
     };
     return (0, AppResponse_1.default)(res, "Registration successful, please check email to verify user.", 201, account);
-});
-exports.fetchStorePinHandler = (0, catchAsync_1.default)(async (req, res, next) => {
-    const pinId = await otp_model_1.default.find();
-    return (0, AppResponse_1.default)(res, "Store ID fetch Successfully.", 201, pinId);
 });
 exports.verifyEmailHandler = (0, catchAsync_1.default)(async (req, res, next) => {
     const { otp, email } = req.body;

@@ -13,10 +13,7 @@ import {
   GenerateRefreshToken,
   GenerateTrackingToken,
 } from "../helpers/GenerateToken";
-import sendOtp from "../helpers/sendOtp";
-import verifyOtp from "../helpers/verifyOtp";
-import Otp from "../models/otp.model";
-import { NODE_ENV, RefreshToken_Secret_Key } from "../serviceUrl";
+import { RefreshToken_Secret_Key } from "../serviceUrl";
 import GenerateRandomId, {
   generateRandomAlphanumeric,
 } from "../helpers/GenerateRandomId";
@@ -105,16 +102,6 @@ export const registerHandler = catchAsync(
       201,
       account
     );
-  }
-);
-
-
-
-export const fetchStorePinHandler = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const pinId = await Otp.find();
-    
-    return AppResponse(res, "Store ID fetch Successfully.", 201, pinId);
   }
 );
 
