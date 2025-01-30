@@ -1,6 +1,5 @@
 import express from "express";
 import VerifyAccessToken from "../middleware/verifyAccessToken";
-import validate from "../middleware/validateZod";
 import { AddToCart, ClearCart, FetchAllCarts, FetchSingleUserCart, RemoveFromCart } from "../controllers/cart.controller";
 import CheckRole from "../middleware/checkRole";
 

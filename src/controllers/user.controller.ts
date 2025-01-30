@@ -203,3 +203,38 @@ export const fetchAllStores = catchAsync(
   }
 );
 
+
+export const approveStoreHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sellerId } = req.params;
+
+    // Find the seller
+    const seller = await Seller.findById(sellerId);
+    if (!seller) {
+      return next(new AppError("Seller not found", 404));
+    }
+
+    // Check if the store exists
+    if (!seller.store) {
+      return next(new AppError("Seller does not have a store", 400));
+    }
+
+    // Approve the store
+    seller.store.isStoreApproved = true;
+    seller.store.isStoreRejected = false;
+    seller.store.isStoreVerified = true;
+
+    await seller.save();
+
+    return AppResponse(res, "Store approved successfully", 200, {
+      sellerId,
+      storeApproved: true,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

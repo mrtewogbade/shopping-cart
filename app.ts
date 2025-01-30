@@ -13,6 +13,7 @@ import GlobalErrorHandler from "./src/errors/errorHandler";
 import authRoutes from "./src/routes/auth.routes";
 import userRoutes from "./src/routes/user.routes";
 import productRoutes from "./src/routes/product.routes";
+import cartRoutes from "./src/routes/cart.routes"
 
 
 import Limiter from "./src/middleware/rateLimit";
@@ -62,6 +63,7 @@ app.use(compression({ filter: shouldCompress }));
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/product", Limiter, productRoutes);
+app.use("/api/cart", cartRoutes);
 
 
 

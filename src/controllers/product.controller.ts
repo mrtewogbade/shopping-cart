@@ -26,8 +26,6 @@ export const createProduct = catchAsync(
       discount,
       category,
       location,
-   
-      stock,
     } = req.body;
 
     const user: any = await Seller.findById(id).select("-password");
@@ -56,7 +54,6 @@ export const createProduct = catchAsync(
       category,
       thumbnail,
       images: uploadedImages,
-      stock,
 
     });
 
@@ -156,17 +153,16 @@ export const fetchAllProducts = catchAsync(
       query.name = { $regex: search, $options: "i" };
     }
 
-    // Add category filter
+
     if (category) {
       query.category = category; // Ensure category is an ObjectId if stored as such
     }
 
-    // Add store filter
+
     if (storeId) {
       query["seller.store"] = storeId;
     }
 
-    // Add seller filter
     if (sellerId) {
       query.seller = sellerId;
     }

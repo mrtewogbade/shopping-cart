@@ -39,6 +39,9 @@ export const uploadMedia = async (
   }
 };
 
+
+
+
 export const deleteImage = async (keys: string[]): Promise<void> => {
   const deletePromises = keys.map(async (key) => {
     const storageRef = ref(storage, key);

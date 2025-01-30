@@ -6,11 +6,10 @@ export const storeSchema = z.object({
   storeLocation: z
     .string({ required_error: "Store location is required" })
     .min(3, "Store location must be atleast 3 characters long"),
-  storeCategory: z.array(z.string()),
+  storeCategory: z.union([z.string(), z.array(z.string())]),
   storeDescription: z
     .string({ required_error: "Store description is required" })
     .min(10, "Store description must be atleast 3 characters long"),
-  // storeImage:z.string().optional(),
   storeAvailability: z.date().optional(),
 });
 
