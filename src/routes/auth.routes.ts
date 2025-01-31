@@ -21,12 +21,6 @@ router.patch("/create-reset-password", Limiter, ChangePasswordHandler)
 router.patch("/verify-password-otp", ResetPasswordOtpHandler)
 router.patch("/reset-password", VerifyTrackingToken, ResetPasswordHandler)
 
-// Google Login Route
-router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-// Google Login Callback
-router.get('/auth/google/callback', passport.authenticate('google', { session: false }), GoogleOauthLoginHandler);
-// Google Register Callback
-router.post('/auth/google/signup', passport.authenticate('google-token', { session: false }), GoogleOauthRegisterHandler);
 
 export default router;
